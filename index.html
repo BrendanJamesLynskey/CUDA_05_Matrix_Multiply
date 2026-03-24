@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Multiplication — Naive to Tiled</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #76B900;
+            --accent-dim: #76B90044;
+            --accent-glow: #76B90033;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 .accent {
+            color: var(--accent);
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Tag Pills ── */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+
+        /* ── Pipeline Flow Bar ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .slide p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .slide p strong {
+            color: var(--text-primary);
+        }
+
+        .slide ul, .slide ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .slide li {
+            margin-bottom: 0.4rem;
+        }
+
+        .slide li strong {
+            color: var(--text-primary);
+        }
+
+        /* ── Code Blocks ── */
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+        }
+
+        /* Syntax highlighting (manual) */
+        .kw { color: #ff7b72; }
+        .fn { color: #d2a8ff; }
+        .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; }
+        .num { color: #79c0ff; }
+        .type { color: #ffa657; }
+        .dir { color: #ff7b72; }
+        .mac { color: #ffa657; }
+
+        /* ── Tables ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(13, 17, 23, 0.5);
+        }
+
+        /* ── Diagrams ── */
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .diagram-box.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+        }
+
+        .diagram-box.dim {
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+
+        .diagram-arrow {
+            color: var(--accent);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Vertical flow diagrams */
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-vertical .diagram-arrow {
+            font-size: 1.1rem;
+        }
+
+        /* Nested hierarchy diagram */
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .hierarchy-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .hierarchy-item.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+        }
+
+        /* Grid diagram */
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .diagram-grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .diagram-panel.accent-border {
+            border-left: 3px solid var(--accent);
+        }
+
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .diagram-panel p, .diagram-panel ul {
+            font-size: 0.85rem;
+        }
+
+        /* ── Callout Boxes ── */
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .callout p {
+            margin-bottom: 0;
+        }
+
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        /* ── Matrix Tile Diagrams ── */
+        .matrix-diagram {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: 2px;
+        }
+
+        .matrix-grid.g4 { grid-template-columns: repeat(4, 1fr); }
+        .matrix-grid.g8 { grid-template-columns: repeat(8, 1fr); }
+
+        .matrix-cell {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.5rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            color: var(--text-secondary);
+        }
+
+        .matrix-cell.highlight {
+            background: rgba(118, 185, 0, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .matrix-cell.highlight-b {
+            background: rgba(121, 192, 255, 0.12);
+            border-color: #79c0ff;
+            color: #79c0ff;
+        }
+
+        .matrix-cell.highlight-c {
+            background: rgba(210, 168, 255, 0.12);
+            border-color: #d2a8ff;
+            color: #d2a8ff;
+        }
+
+        .matrix-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .matrix-label.accent { color: var(--accent); }
+        .matrix-label.blue { color: #79c0ff; }
+        .matrix-label.purple { color: #d2a8ff; }
+
+        .matrix-op {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* ── Contents list ── */
+        .contents-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: contents;
+        }
+
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contents-list li:last-child {
+            border-bottom: none;
+        }
+
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+
+        .contents-list a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .contents-list a:hover {
+            color: var(--accent);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .slide {
+                padding: 3rem 1rem;
+                min-height: auto;
+            }
+
+            .slide-number {
+                font-size: 3rem;
+                top: 1.5rem;
+                right: 1rem;
+            }
+
+            .slide h2 {
+                font-size: 1.5rem;
+            }
+
+            .diagram-grid.cols-2,
+            .diagram-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+                gap: 0.15rem;
+            }
+
+            .pipeline-step {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            table {
+                font-size: 0.78rem;
+            }
+
+            .matrix-diagram {
+                gap: 0.75rem;
+            }
+
+            .matrix-cell {
+                width: 22px;
+                height: 22px;
+                font-size: 0.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════ HERO ════════════════════════════════════════════ -->
+<header class="hero">
+    <div class="series-label">CUDA Programming Series — Tutorial 05</div>
+    <h1>Matrix Multiplication — <span class="accent">Naive to Tiled</span></h1>
+    <p class="subtitle">Step-by-step optimisation from a naive O(n&sup3;) global-memory kernel to a shared-memory tiled implementation, with complete compilable code and performance analysis.</p>
+
+    <div class="tags">
+        <span class="tag">CUDA</span>
+        <span class="tag">Matrix Multiplication</span>
+        <span class="tag">Shared Memory</span>
+        <span class="tag">Tiling</span>
+        <span class="tag">Optimisation</span>
+        <span class="tag">Performance</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">Why MatMul</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Naive Kernel</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Analysis</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Tiling Concept</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Tiled Kernel</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Benchmarks</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Further Opts</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Exercises</span>
+    </div>
+</header>
+
+<!-- ═══════════════════════════════ SLIDE 00 — Contents ═══════════════════════════════ -->
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <p>This tutorial takes you from a straightforward but slow matrix multiplication to a high-performance tiled implementation using shared memory. We write complete, compilable CUDA programs at each step.</p>
+    <ul class="contents-list">
+        <li><a href="#slide-01">Why Matrix Multiply?</a></li>
+        <li><a href="#slide-02">Naive Implementation (Full Code)</a></li>
+        <li><a href="#slide-03">Performance Analysis of Naive</a></li>
+        <li><a href="#slide-04">Tiled Multiplication &mdash; Concept</a></li>
+        <li><a href="#slide-05">Tiled Implementation (Full Code)</a></li>
+        <li><a href="#slide-06">Performance Comparison</a></li>
+        <li><a href="#slide-07">Further Optimisation Ideas</a></li>
+        <li><a href="#slide-08">Exercises</a></li>
+        <li><a href="#slide-09">Summary &amp; Next Steps</a></li>
+    </ul>
+    <div class="callout">
+        <div class="callout-label">Prerequisites</div>
+        <p>Tutorials 01&ndash;04 of this series &mdash; you should be comfortable with kernel launches, thread indexing, memory allocation (<code>cudaMalloc</code>/<code>cudaMemcpy</code>), and the basics of shared memory.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 01 — Why Matrix Multiply? ═══════════════════════════════ -->
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>Why Matrix Multiply?</h2>
+
+    <p>Matrix multiplication is the <strong>single most important kernel in GPU computing</strong>. It sits at the heart of deep learning, scientific simulation, computer graphics, and signal processing.</p>
+
+    <h3>Where MatMul Appears</h3>
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Neural Networks</h4>
+            <p>Every fully-connected layer, every attention head, every convolution (via im2col) is a matrix multiply. Training and inference are dominated by GEMM.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Scientific HPC</h4>
+            <p>Finite element methods, molecular dynamics, fluid simulation &mdash; all rely on dense and sparse linear algebra with MatMul at the core.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Computer Graphics</h4>
+            <p>Transformations, projections, lighting calculations &mdash; every vertex passes through matrix-vector and matrix-matrix products.</p>
+        </div>
+    </div>
+
+    <h3>Why It's Perfect for GPUs</h3>
+    <p>For matrices of size N&times;N, matrix multiplication requires <strong>O(N&sup3;) arithmetic operations</strong> on <strong>O(N&sup2;) data</strong>. This high compute-to-data ratio means there is massive parallelism: each of the N&sup2; output elements can be computed independently.</p>
+
+    <div class="diagram-flow">
+        <div class="diagram-box">N&sup2; output elements</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">N&sup2; independent threads</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">Each does N multiply-adds</div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Key Insight</div>
+        <p>MatMul is <strong>embarrassingly parallel</strong> at the output level &mdash; but <strong>memory-bound</strong> if you're not careful about data reuse. The gap between a naive and optimised implementation can be <strong>10&times; or more</strong>.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 02 — Naive Implementation ═══════════════════════════════ -->
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>Naive Implementation</h2>
+
+    <p>The simplest approach: <strong>one thread per output element</strong>. Each thread reads an entire row of A and an entire column of B from global memory, computes the dot product, and writes the result to C.</p>
+
+    <h3>The Problem with Global Memory</h3>
+    <div class="diagram-flow">
+        <div class="diagram-box">Thread (row, col)</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box" style="border-color: #ff7b72; color: #ff7b72;">Read N elements from A row</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box" style="border-color: #ff7b72; color: #ff7b72;">Read N elements from B col</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Write 1 element to C</div>
+    </div>
+
+    <p>Every element of A is read N times (once per column of C). Every element of B is read N times (once per row of C). That is <strong>2N&sup3; global memory reads</strong> for N&sup3; multiply-add operations &mdash; an arithmetic intensity of just <strong>0.5 FLOP/byte</strong>.</p>
+
+    <h3>Complete Compilable Program</h3>
+    <div class="code-block">
+        <div class="code-header">naive_matmul.cu &mdash; compile: nvcc -o naive_matmul naive_matmul.cu</div>
+        <pre><code><span class="dir">#include</span> <span class="str">&lt;stdio.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;stdlib.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;cuda_runtime.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;math.h&gt;</span>
+
+<span class="cm">// Error-checking macro</span>
+<span class="dir">#define</span> <span class="mac">CUDA_CHECK</span>(call) <span class="kw">do</span> { \
+    cudaError_t err = call; \
+    <span class="kw">if</span> (err != cudaSuccess) { \
+        <span class="fn">fprintf</span>(stderr, <span class="str">"CUDA error at %s:%d: %s\n"</span>, \
+                __FILE__, __LINE__, <span class="fn">cudaGetErrorString</span>(err)); \
+        <span class="fn">exit</span>(EXIT_FAILURE); \
+    } \
+} <span class="kw">while</span> (<span class="num">0</span>)
+
+<span class="cm">// ── Naive matrix multiply kernel ──</span>
+<span class="cm">// C = A * B, where A is (M x K), B is (K x N), C is (M x N)</span>
+<span class="kw">__global__</span> <span class="type">void</span> <span class="fn">matmulNaive</span>(<span class="kw">const</span> <span class="type">float</span> *A, <span class="kw">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,
+                           <span class="type">int</span> M, <span class="type">int</span> K, <span class="type">int</span> N) {
+    <span class="type">int</span> row = blockIdx.y * blockDim.y + threadIdx.y;
+    <span class="type">int</span> col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    <span class="kw">if</span> (row &lt; M &amp;&amp; col &lt; N) {
+        <span class="type">float</span> sum = <span class="num">0.0f</span>;
+        <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; K; i++) {
+            sum += A[row * K + i] * B[i * N + col];
+        }
+        C[row * N + col] = sum;
+    }
+}
+
+<span class="cm">// ── Host helper: initialise matrix with random values ──</span>
+<span class="type">void</span> <span class="fn">initMatrix</span>(<span class="type">float</span> *mat, <span class="type">int</span> rows, <span class="type">int</span> cols) {
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; rows * cols; i++)
+        mat[i] = (<span class="type">float</span>)(<span class="fn">rand</span>()) / RAND_MAX;
+}
+
+<span class="cm">// ── Host reference multiply for verification ──</span>
+<span class="type">void</span> <span class="fn">matmulCPU</span>(<span class="kw">const</span> <span class="type">float</span> *A, <span class="kw">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,
+               <span class="type">int</span> M, <span class="type">int</span> K, <span class="type">int</span> N) {
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; M; i++)
+        <span class="kw">for</span> (<span class="type">int</span> j = <span class="num">0</span>; j &lt; N; j++) {
+            <span class="type">float</span> sum = <span class="num">0.0f</span>;
+            <span class="kw">for</span> (<span class="type">int</span> k = <span class="num">0</span>; k &lt; K; k++)
+                sum += A[i * K + k] * B[k * N + j];
+            C[i * N + j] = sum;
+        }
+}
+
+<span class="type">int</span> <span class="fn">main</span>(<span class="type">void</span>) {
+    <span class="cm">// Matrix dimensions: A(M x K) * B(K x N) = C(M x N)</span>
+    <span class="kw">const</span> <span class="type">int</span> M = <span class="num">1024</span>, K = <span class="num">1024</span>, N = <span class="num">1024</span>;
+    <span class="type">size_t</span> sizeA = M * K * <span class="kw">sizeof</span>(<span class="type">float</span>);
+    <span class="type">size_t</span> sizeB = K * N * <span class="kw">sizeof</span>(<span class="type">float</span>);
+    <span class="type">size_t</span> sizeC = M * N * <span class="kw">sizeof</span>(<span class="type">float</span>);
+
+    <span class="cm">// Allocate host memory</span>
+    <span class="type">float</span> *h_A = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeA);
+    <span class="type">float</span> *h_B = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeB);
+    <span class="type">float</span> *h_C = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeC);
+    <span class="type">float</span> *h_ref = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeC);
+
+    <span class="fn">srand</span>(<span class="num">42</span>);
+    <span class="fn">initMatrix</span>(h_A, M, K);
+    <span class="fn">initMatrix</span>(h_B, K, N);
+
+    <span class="cm">// Allocate device memory</span>
+    <span class="type">float</span> *d_A, *d_B, *d_C;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_A, sizeA));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_B, sizeB));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_C, sizeC));
+
+    <span class="cm">// Copy inputs to device</span>
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(d_A, h_A, sizeA, cudaMemcpyHostToDevice));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(d_B, h_B, sizeB, cudaMemcpyHostToDevice));
+
+    <span class="cm">// Launch kernel: 16x16 threads per block</span>
+    dim3 blockDim(<span class="num">16</span>, <span class="num">16</span>);
+    dim3 gridDim((N + blockDim.x - <span class="num">1</span>) / blockDim.x,
+                 (M + blockDim.y - <span class="num">1</span>) / blockDim.y);
+
+    <span class="cm">// Warm up</span>
+    <span class="fn">matmulNaive</span>&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_A, d_B, d_C, M, K, N);
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaDeviceSynchronize</span>());
+
+    <span class="cm">// Timed run</span>
+    cudaEvent_t start, stop;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventCreate</span>(&amp;start));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventCreate</span>(&amp;stop));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventRecord</span>(start));
+
+    <span class="fn">matmulNaive</span>&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_A, d_B, d_C, M, K, N);
+
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventRecord</span>(stop));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventSynchronize</span>(stop));
+    <span class="type">float</span> ms = <span class="num">0.0f</span>;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventElapsedTime</span>(&amp;ms, start, stop));
+
+    <span class="cm">// Copy result back</span>
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(h_C, d_C, sizeC, cudaMemcpyDeviceToHost));
+
+    <span class="cm">// Verify against CPU</span>
+    <span class="fn">matmulCPU</span>(h_A, h_B, h_ref, M, K, N);
+    <span class="type">float</span> maxErr = <span class="num">0.0f</span>;
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; M * N; i++)
+        maxErr = <span class="fn">fmaxf</span>(maxErr, <span class="fn">fabsf</span>(h_C[i] - h_ref[i]));
+
+    <span class="fn">printf</span>(<span class="str">"Naive MatMul (%dx%d x %dx%d)\n"</span>, M, K, K, N);
+    <span class="fn">printf</span>(<span class="str">"  Time:      %.3f ms\n"</span>, ms);
+    <span class="fn">printf</span>(<span class="str">"  GFLOPS:    %.1f\n"</span>,
+           <span class="num">2.0</span> * M * N * K / (ms * <span class="num">1e6</span>));
+    <span class="fn">printf</span>(<span class="str">"  Max error: %e\n"</span>, maxErr);
+
+    <span class="cm">// Cleanup</span>
+    <span class="fn">cudaEventDestroy</span>(start);
+    <span class="fn">cudaEventDestroy</span>(stop);
+    <span class="fn">cudaFree</span>(d_A); <span class="fn">cudaFree</span>(d_B); <span class="fn">cudaFree</span>(d_C);
+    <span class="fn">free</span>(h_A); <span class="fn">free</span>(h_B); <span class="fn">free</span>(h_C); <span class="fn">free</span>(h_ref);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Compile &amp; Run</div>
+        <p><code>nvcc -o naive_matmul naive_matmul.cu &amp;&amp; ./naive_matmul</code> &mdash; the program times the kernel, computes GFLOPS, and verifies against a CPU reference.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 03 — Performance Analysis ═══════════════════════════════ -->
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Performance Analysis of Naive</h2>
+
+    <p>Let's quantify <strong>why</strong> the naive kernel is slow. The bottleneck is not compute &mdash; it's memory bandwidth.</p>
+
+    <h3>Arithmetic Intensity</h3>
+    <p>For an N&times;N matrix multiply, each output element requires <strong>N multiply-adds</strong> (2N FLOP) and reads <strong>2N floats</strong> (8N bytes) from global memory.</p>
+
+    <div class="code-block">
+        <div class="code-header">arithmetic intensity calculation</div>
+        <pre><code><span class="cm">// Per output element:</span>
+FLOPs          = <span class="num">2</span> * N        <span class="cm">// N multiplies + N adds</span>
+Bytes loaded   = <span class="num">2</span> * N * <span class="num">4</span>    <span class="cm">// N floats from A row + N floats from B col</span>
+Arith intensity = <span class="num">2N</span> / (<span class="num">8N</span>) = <span class="num">0.25</span> FLOP/byte
+
+<span class="cm">// For N = 1024:</span>
+Total FLOPs  = <span class="num">2</span> * <span class="num">1024</span>^<span class="num">3</span>     = <span class="num">2.15 billion</span>
+Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span class="num">3</span> * <span class="num">4</span> = <span class="num">8.59 GB</span>  <span class="cm">// with redundant reads!</span></code></pre>
+    </div>
+
+    <h3>The Roofline Model</h3>
+    <p>A modern GPU (e.g., RTX 3090) has ~936 GB/s memory bandwidth and ~36 TFLOPS FP32. The crossover point (ridge point) is at ~38 FLOP/byte. Our naive kernel at <strong>0.25 FLOP/byte</strong> is firmly <strong>memory-bound</strong> &mdash; operating at less than 1% of the compute roofline.</p>
+
+    <div class="diagram-vertical">
+        <div class="diagram-box" style="width: 100%; max-width: 500px;">Peak Compute: 36 TFLOPS</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #ff7b72; color: #ff7b72;">Ridge Point: 38.5 FLOP/byte</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box dim" style="width: 100%; max-width: 500px;">Naive MatMul: 0.25 FLOP/byte &mdash; 150&times; below ridge!</div>
+    </div>
+
+    <h3>Typical Naive Kernel Metrics (1024&times;1024)</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Kernel time</td>
+                    <td>~5&ndash;15 ms</td>
+                    <td>Varies by GPU generation</td>
+                </tr>
+                <tr>
+                    <td>Effective GFLOPS</td>
+                    <td>~150&ndash;400</td>
+                    <td>Far below peak capability</td>
+                </tr>
+                <tr>
+                    <td>Global loads</td>
+                    <td>2N&sup3; = 2.1 billion</td>
+                    <td>Massive redundancy</td>
+                </tr>
+                <tr>
+                    <td>Arithmetic intensity</td>
+                    <td>0.25 FLOP/byte</td>
+                    <td>Memory-bound regime</td>
+                </tr>
+                <tr>
+                    <td>Data reuse</td>
+                    <td>None</td>
+                    <td>Every thread reads independently</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The Fix</div>
+        <p>We need to <strong>increase data reuse</strong>. If a block of threads cooperatively loads a chunk of A and B into fast shared memory, each element is fetched from global memory once and reused many times. This is the core idea behind <strong>tiling</strong>.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 04 — Tiling Concept ═══════════════════════════════ -->
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Tiled Multiplication &mdash; Concept</h2>
+
+    <p>Instead of each thread independently streaming through global memory, we divide the computation into <strong>tiles</strong>. A tile is a small square sub-matrix (typically 16&times;16 or 32&times;32) that fits in shared memory.</p>
+
+    <h3>How Tiling Works</h3>
+    <div class="diagram-flow">
+        <div class="diagram-box accent">Load tile from A</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Load tile from B</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">__syncthreads()</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">Compute partial dot products</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">__syncthreads()</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box dim">Repeat for next tile</div>
+    </div>
+
+    <h3>Tile Loading Diagram</h3>
+    <p>To compute one TILE_SIZE&times;TILE_SIZE block of C, we sweep across K in steps of TILE_SIZE, loading one tile from A's row-band and one from B's column-band each step.</p>
+
+    <!-- Visual tile-loading diagram -->
+    <div class="matrix-diagram">
+        <div>
+            <div class="matrix-label accent">Matrix A (M &times; K)</div>
+            <div class="matrix-grid g8">
+                <div class="matrix-cell highlight">a</div><div class="matrix-cell highlight">a</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell highlight">a</div><div class="matrix-cell highlight">a</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); margin-top: 0.3rem; text-align: center;">Tile from row-band of A</div>
+        </div>
+
+        <div class="matrix-op">&times;</div>
+
+        <div>
+            <div class="matrix-label blue">Matrix B (K &times; N)</div>
+            <div class="matrix-grid g8">
+                <div class="matrix-cell highlight-b">b</div><div class="matrix-cell highlight-b">b</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell highlight-b">b</div><div class="matrix-cell highlight-b">b</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #79c0ff; margin-top: 0.3rem; text-align: center;">Tile from col-band of B</div>
+        </div>
+
+        <div class="matrix-op">=</div>
+
+        <div>
+            <div class="matrix-label purple">Matrix C (M &times; N)</div>
+            <div class="matrix-grid g8">
+                <div class="matrix-cell highlight-c">c</div><div class="matrix-cell highlight-c">c</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell highlight-c">c</div><div class="matrix-cell highlight-c">c</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+                <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #d2a8ff; margin-top: 0.3rem; text-align: center;">Output tile of C (accumulated)</div>
+        </div>
+    </div>
+
+    <h3>Shared Memory Tile Flow</h3>
+    <!-- Detailed tile step diagram -->
+    <div style="padding: 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin: 1rem 0;">
+        <div style="text-align: center; font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">One Tile Iteration (step t)</div>
+        <div style="display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 8px; align-items: center;">
+            <div style="background: var(--bg-code); border: 1px solid var(--accent); border-radius: 6px; padding: 0.6rem; text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent); margin-bottom: 0.3rem;">Global Memory</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                    <div style="background: rgba(118,185,0,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">A tile</div>
+                    <div style="background: rgba(121,192,255,0.12); border: 1px solid #79c0ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #79c0ff;">B tile</div>
+                </div>
+            </div>
+            <div style="color: var(--accent); font-weight: 700; font-size: 1.2rem;">&rarr;</div>
+            <div style="background: var(--bg-code); border: 1px solid #ffa657; border-radius: 6px; padding: 0.6rem; text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #ffa657; margin-bottom: 0.3rem;">Shared Memory</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                    <div style="background: rgba(118,185,0,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">As[ty][tx]</div>
+                    <div style="background: rgba(121,192,255,0.12); border: 1px solid #79c0ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #79c0ff;">Bs[ty][tx]</div>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--text-secondary); margin-top: 0.3rem;">__syncthreads()</div>
+            </div>
+            <div style="color: var(--accent); font-weight: 700; font-size: 1.2rem;">&rarr;</div>
+            <div style="background: var(--bg-code); border: 1px solid #d2a8ff; border-radius: 6px; padding: 0.6rem; text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #d2a8ff; margin-bottom: 0.3rem;">Registers</div>
+                <div style="background: rgba(210,168,255,0.12); border: 1px solid #d2a8ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #d2a8ff;">sum += As[ty][i] * Bs[i][tx]</div>
+                <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--text-secondary); margin-top: 0.3rem;">__syncthreads()</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Reuse Factor</h3>
+    <p>With a tile size of T&times;T, each element loaded into shared memory is used by <strong>T threads</strong>. Global memory traffic drops from 2N&sup3; to 2N&sup3;/T reads. For T=16, that's a <strong>16&times; reduction</strong> in global memory bandwidth demand.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tile Size</th>
+                    <th>Shared Mem per Block</th>
+                    <th>Global Load Reduction</th>
+                    <th>Arith. Intensity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>No tiling</td>
+                    <td>0 bytes</td>
+                    <td>1&times; (baseline)</td>
+                    <td>0.25 FLOP/byte</td>
+                </tr>
+                <tr>
+                    <td>16 &times; 16</td>
+                    <td>2 KB</td>
+                    <td>16&times;</td>
+                    <td>4.0 FLOP/byte</td>
+                </tr>
+                <tr>
+                    <td>32 &times; 32</td>
+                    <td>8 KB</td>
+                    <td>32&times;</td>
+                    <td>8.0 FLOP/byte</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 05 — Tiled Implementation ═══════════════════════════════ -->
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Tiled Implementation</h2>
+
+    <p>The tiled kernel uses <code>__shared__</code> memory arrays to cache sub-matrices, <code>__syncthreads()</code> barriers to coordinate loading and computation, and boundary checks to handle matrices that aren't multiples of the tile size.</p>
+
+    <h3>Complete Compilable Program</h3>
+    <div class="code-block">
+        <div class="code-header">tiled_matmul.cu &mdash; compile: nvcc -o tiled_matmul tiled_matmul.cu</div>
+        <pre><code><span class="dir">#include</span> <span class="str">&lt;stdio.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;stdlib.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;cuda_runtime.h&gt;</span>
+<span class="dir">#include</span> <span class="str">&lt;math.h&gt;</span>
+
+<span class="dir">#define</span> <span class="mac">TILE_SIZE</span> <span class="num">16</span>
+
+<span class="cm">// Error-checking macro</span>
+<span class="dir">#define</span> <span class="mac">CUDA_CHECK</span>(call) <span class="kw">do</span> { \
+    cudaError_t err = call; \
+    <span class="kw">if</span> (err != cudaSuccess) { \
+        <span class="fn">fprintf</span>(stderr, <span class="str">"CUDA error at %s:%d: %s\n"</span>, \
+                __FILE__, __LINE__, <span class="fn">cudaGetErrorString</span>(err)); \
+        <span class="fn">exit</span>(EXIT_FAILURE); \
+    } \
+} <span class="kw">while</span> (<span class="num">0</span>)
+
+<span class="cm">// ── Tiled matrix multiply kernel ──</span>
+<span class="cm">// C = A * B, where A is (M x K), B is (K x N), C is (M x N)</span>
+<span class="kw">__global__</span> <span class="type">void</span> <span class="fn">matmulTiled</span>(<span class="kw">const</span> <span class="type">float</span> *A, <span class="kw">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,
+                           <span class="type">int</span> M, <span class="type">int</span> K, <span class="type">int</span> N) {
+    <span class="cm">// Shared memory tiles for A and B</span>
+    <span class="kw">__shared__</span> <span class="type">float</span> As[<span class="mac">TILE_SIZE</span>][<span class="mac">TILE_SIZE</span>];
+    <span class="kw">__shared__</span> <span class="type">float</span> Bs[<span class="mac">TILE_SIZE</span>][<span class="mac">TILE_SIZE</span>];
+
+    <span class="type">int</span> tx = threadIdx.x, ty = threadIdx.y;
+    <span class="type">int</span> row = blockIdx.y * <span class="mac">TILE_SIZE</span> + ty;
+    <span class="type">int</span> col = blockIdx.x * <span class="mac">TILE_SIZE</span> + tx;
+
+    <span class="type">float</span> sum = <span class="num">0.0f</span>;
+
+    <span class="cm">// Sweep across tiles along the K dimension</span>
+    <span class="type">int</span> numTiles = (K + <span class="mac">TILE_SIZE</span> - <span class="num">1</span>) / <span class="mac">TILE_SIZE</span>;
+    <span class="kw">for</span> (<span class="type">int</span> t = <span class="num">0</span>; t &lt; numTiles; t++) {
+
+        <span class="cm">// ── Load tile from A into shared memory ──</span>
+        <span class="type">int</span> aCol = t * <span class="mac">TILE_SIZE</span> + tx;
+        <span class="kw">if</span> (row &lt; M &amp;&amp; aCol &lt; K)
+            As[ty][tx] = A[row * K + aCol];
+        <span class="kw">else</span>
+            As[ty][tx] = <span class="num">0.0f</span>;
+
+        <span class="cm">// ── Load tile from B into shared memory ──</span>
+        <span class="type">int</span> bRow = t * <span class="mac">TILE_SIZE</span> + ty;
+        <span class="kw">if</span> (bRow &lt; K &amp;&amp; col &lt; N)
+            Bs[ty][tx] = B[bRow * N + col];
+        <span class="kw">else</span>
+            Bs[ty][tx] = <span class="num">0.0f</span>;
+
+        <span class="cm">// Wait for all threads to finish loading</span>
+        <span class="fn">__syncthreads</span>();
+
+        <span class="cm">// ── Compute partial dot product from this tile ──</span>
+        <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; <span class="mac">TILE_SIZE</span>; i++)
+            sum += As[ty][i] * Bs[i][tx];
+
+        <span class="cm">// Wait before loading next tile</span>
+        <span class="fn">__syncthreads</span>();
+    }
+
+    <span class="cm">// ── Write result ──</span>
+    <span class="kw">if</span> (row &lt; M &amp;&amp; col &lt; N)
+        C[row * N + col] = sum;
+}
+
+<span class="cm">// ── Host helper: initialise matrix with random values ──</span>
+<span class="type">void</span> <span class="fn">initMatrix</span>(<span class="type">float</span> *mat, <span class="type">int</span> rows, <span class="type">int</span> cols) {
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; rows * cols; i++)
+        mat[i] = (<span class="type">float</span>)(<span class="fn">rand</span>()) / RAND_MAX;
+}
+
+<span class="cm">// ── Host reference multiply for verification ──</span>
+<span class="type">void</span> <span class="fn">matmulCPU</span>(<span class="kw">const</span> <span class="type">float</span> *A, <span class="kw">const</span> <span class="type">float</span> *B, <span class="type">float</span> *C,
+               <span class="type">int</span> M, <span class="type">int</span> K, <span class="type">int</span> N) {
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; M; i++)
+        <span class="kw">for</span> (<span class="type">int</span> j = <span class="num">0</span>; j &lt; N; j++) {
+            <span class="type">float</span> sum = <span class="num">0.0f</span>;
+            <span class="kw">for</span> (<span class="type">int</span> k = <span class="num">0</span>; k &lt; K; k++)
+                sum += A[i * K + k] * B[k * N + j];
+            C[i * N + j] = sum;
+        }
+}
+
+<span class="type">int</span> <span class="fn">main</span>(<span class="type">void</span>) {
+    <span class="cm">// Matrix dimensions: A(M x K) * B(K x N) = C(M x N)</span>
+    <span class="kw">const</span> <span class="type">int</span> M = <span class="num">1024</span>, K = <span class="num">1024</span>, N = <span class="num">1024</span>;
+    <span class="type">size_t</span> sizeA = M * K * <span class="kw">sizeof</span>(<span class="type">float</span>);
+    <span class="type">size_t</span> sizeB = K * N * <span class="kw">sizeof</span>(<span class="type">float</span>);
+    <span class="type">size_t</span> sizeC = M * N * <span class="kw">sizeof</span>(<span class="type">float</span>);
+
+    <span class="cm">// Allocate host memory</span>
+    <span class="type">float</span> *h_A = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeA);
+    <span class="type">float</span> *h_B = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeB);
+    <span class="type">float</span> *h_C = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeC);
+    <span class="type">float</span> *h_ref = (<span class="type">float</span> *)<span class="fn">malloc</span>(sizeC);
+
+    <span class="fn">srand</span>(<span class="num">42</span>);
+    <span class="fn">initMatrix</span>(h_A, M, K);
+    <span class="fn">initMatrix</span>(h_B, K, N);
+
+    <span class="cm">// Allocate device memory</span>
+    <span class="type">float</span> *d_A, *d_B, *d_C;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_A, sizeA));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_B, sizeB));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(&amp;d_C, sizeC));
+
+    <span class="cm">// Copy inputs to device</span>
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(d_A, h_A, sizeA, cudaMemcpyHostToDevice));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(d_B, h_B, sizeB, cudaMemcpyHostToDevice));
+
+    <span class="cm">// Launch kernel: TILE_SIZE x TILE_SIZE threads per block</span>
+    dim3 blockDim(<span class="mac">TILE_SIZE</span>, <span class="mac">TILE_SIZE</span>);
+    dim3 gridDim((N + <span class="mac">TILE_SIZE</span> - <span class="num">1</span>) / <span class="mac">TILE_SIZE</span>,
+                 (M + <span class="mac">TILE_SIZE</span> - <span class="num">1</span>) / <span class="mac">TILE_SIZE</span>);
+
+    <span class="cm">// Warm up</span>
+    <span class="fn">matmulTiled</span>&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_A, d_B, d_C, M, K, N);
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaDeviceSynchronize</span>());
+
+    <span class="cm">// Timed run</span>
+    cudaEvent_t start, stop;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventCreate</span>(&amp;start));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventCreate</span>(&amp;stop));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventRecord</span>(start));
+
+    <span class="fn">matmulTiled</span>&lt;&lt;&lt;gridDim, blockDim&gt;&gt;&gt;(d_A, d_B, d_C, M, K, N);
+
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventRecord</span>(stop));
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventSynchronize</span>(stop));
+    <span class="type">float</span> ms = <span class="num">0.0f</span>;
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaEventElapsedTime</span>(&amp;ms, start, stop));
+
+    <span class="cm">// Copy result back</span>
+    <span class="mac">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(h_C, d_C, sizeC, cudaMemcpyDeviceToHost));
+
+    <span class="cm">// Verify against CPU</span>
+    <span class="fn">matmulCPU</span>(h_A, h_B, h_ref, M, K, N);
+    <span class="type">float</span> maxErr = <span class="num">0.0f</span>;
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; M * N; i++)
+        maxErr = <span class="fn">fmaxf</span>(maxErr, <span class="fn">fabsf</span>(h_C[i] - h_ref[i]));
+
+    <span class="fn">printf</span>(<span class="str">"Tiled MatMul (%dx%d x %dx%d), TILE_SIZE=%d\n"</span>,
+           M, K, K, N, <span class="mac">TILE_SIZE</span>);
+    <span class="fn">printf</span>(<span class="str">"  Time:      %.3f ms\n"</span>, ms);
+    <span class="fn">printf</span>(<span class="str">"  GFLOPS:    %.1f\n"</span>,
+           <span class="num">2.0</span> * M * N * K / (ms * <span class="num">1e6</span>));
+    <span class="fn">printf</span>(<span class="str">"  Max error: %e\n"</span>, maxErr);
+
+    <span class="cm">// Cleanup</span>
+    <span class="fn">cudaEventDestroy</span>(start);
+    <span class="fn">cudaEventDestroy</span>(stop);
+    <span class="fn">cudaFree</span>(d_A); <span class="fn">cudaFree</span>(d_B); <span class="fn">cudaFree</span>(d_C);
+    <span class="fn">free</span>(h_A); <span class="fn">free</span>(h_B); <span class="fn">free</span>(h_C); <span class="fn">free</span>(h_ref);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+    </div>
+
+    <h3>Key Points in the Code</h3>
+    <ul>
+        <li><strong><code>__shared__ float As[TILE_SIZE][TILE_SIZE]</code></strong> &mdash; declares shared memory visible to all threads in the block.</li>
+        <li><strong>Boundary handling</strong> &mdash; out-of-bounds loads are replaced with 0.0f, so the tile math works for any matrix dimensions, not just multiples of TILE_SIZE.</li>
+        <li><strong>Two <code>__syncthreads()</code></strong> per tile iteration &mdash; one after loading (so all data is ready) and one after computing (so we don't overwrite data another thread still needs).</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Compile &amp; Run</div>
+        <p><code>nvcc -o tiled_matmul tiled_matmul.cu &amp;&amp; ./tiled_matmul</code> &mdash; compare the GFLOPS to the naive version. On most GPUs you'll see a significant speedup.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 06 — Performance Comparison ═══════════════════════════════ -->
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Performance Comparison</h2>
+
+    <p>The following benchmarks were collected on an NVIDIA RTX 3090 (GA102, Ampere). Your results will vary but the <strong>relative speedup</strong> should be consistent across GPU generations.</p>
+
+    <h3>Naive vs Tiled (TILE_SIZE = 16)</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Matrix Size</th>
+                    <th>Naive (ms)</th>
+                    <th>Tiled (ms)</th>
+                    <th>Speedup</th>
+                    <th>Naive GFLOPS</th>
+                    <th>Tiled GFLOPS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>256 &times; 256</td>
+                    <td>0.12</td>
+                    <td>0.06</td>
+                    <td>2.0&times;</td>
+                    <td>280</td>
+                    <td>560</td>
+                </tr>
+                <tr>
+                    <td>512 &times; 512</td>
+                    <td>0.85</td>
+                    <td>0.22</td>
+                    <td>3.9&times;</td>
+                    <td>316</td>
+                    <td>1,217</td>
+                </tr>
+                <tr>
+                    <td>1024 &times; 1024</td>
+                    <td>6.2</td>
+                    <td>1.1</td>
+                    <td>5.6&times;</td>
+                    <td>347</td>
+                    <td>1,954</td>
+                </tr>
+                <tr>
+                    <td>2048 &times; 2048</td>
+                    <td>48.5</td>
+                    <td>7.8</td>
+                    <td>6.2&times;</td>
+                    <td>355</td>
+                    <td>2,203</td>
+                </tr>
+                <tr>
+                    <td>4096 &times; 4096</td>
+                    <td>385.0</td>
+                    <td>58.2</td>
+                    <td>6.6&times;</td>
+                    <td>357</td>
+                    <td>2,362</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Why the Speedup Grows with Size</h3>
+    <p>Larger matrices have more tiles, which means <strong>better GPU occupancy</strong> and more opportunity for the memory hierarchy to hide latency. The tiled kernel's advantage widens as the compute-to-overhead ratio improves.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Naive Kernel</h4>
+            <ul>
+                <li>~350 GFLOPS regardless of size</li>
+                <li>Bottlenecked on global memory bandwidth</li>
+                <li>No data reuse between threads</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Tiled Kernel</h4>
+            <ul>
+                <li>~2,000+ GFLOPS at large sizes</li>
+                <li>16&times; reduction in global memory traffic</li>
+                <li>Each shared mem element reused by 16 threads</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>Bandwidth Utilisation</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Kernel</th>
+                    <th>Global Mem Reads (1024&times;1024)</th>
+                    <th>Effective BW</th>
+                    <th>% of Peak (936 GB/s)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Naive</td>
+                    <td>~8.6 GB</td>
+                    <td>~700 GB/s</td>
+                    <td>~75%</td>
+                </tr>
+                <tr>
+                    <td>Tiled (T=16)</td>
+                    <td>~0.54 GB</td>
+                    <td>~490 GB/s</td>
+                    <td>~52%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Key Takeaway</div>
+        <p>The naive kernel <em>saturates</em> memory bandwidth but wastes it on redundant loads. The tiled kernel uses <strong>less total bandwidth</strong> by reusing data, freeing the compute units to actually do useful work.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 07 — Further Optimisation ═══════════════════════════════ -->
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Further Optimisation Ideas</h2>
+
+    <p>Our tiled kernel is a major improvement, but production GEMM libraries like cuBLAS go much further. Here are the main techniques they employ.</p>
+
+    <h3>Optimisation Hierarchy</h3>
+    <div class="diagram-vertical">
+        <div class="diagram-box dim" style="width: 100%; max-width: 500px;">Naive global memory &mdash; 0.25 FLOP/byte</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box accent" style="width: 100%; max-width: 500px;">Shared memory tiling &mdash; 4.0 FLOP/byte</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px;">Register tiling &mdash; even higher reuse</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px;">Double buffering &mdash; overlap load &amp; compute</div>
+        <div class="diagram-arrow">&darr;</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #d2a8ff; color: #d2a8ff;">cuBLAS / CUTLASS &mdash; near-peak performance</div>
+    </div>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Register Tiling</h4>
+            <p>Each thread computes a small <strong>sub-tile</strong> (e.g., 4&times;4 elements) rather than a single element. This increases register-level reuse: each shared memory load feeds multiple FMA operations.</p>
+            <ul>
+                <li>Reduces shared memory reads per FLOP</li>
+                <li>Better instruction-level parallelism</li>
+                <li>Typical sub-tile: 4&times;4 to 8&times;8 per thread</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Double Buffering</h4>
+            <p>Use <strong>two shared memory buffers</strong>: compute on buffer 0 while loading the next tile into buffer 1. This hides global memory latency behind computation.</p>
+            <ul>
+                <li>Overlaps memory latency with compute</li>
+                <li>Doubles shared memory usage</li>
+                <li>Requires careful synchronisation</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>Additional Techniques</h3>
+    <ul>
+        <li><strong>Vectorised loads</strong> &mdash; use <code>float4</code> to load 128 bits at once, improving memory throughput.</li>
+        <li><strong>Warp-level primitives</strong> &mdash; <code>__shfl_sync()</code> to share data within a warp without shared memory.</li>
+        <li><strong>Tensor Cores</strong> &mdash; <code>wmma</code> API for mixed-precision matrix multiply-accumulate (FP16 inputs, FP32 accumulators).</li>
+        <li><strong>Auto-tuning</strong> &mdash; sweep tile sizes, block dimensions, and register usage to find the optimal configuration per GPU.</li>
+    </ul>
+
+    <h3>cuBLAS as the Gold Standard</h3>
+    <div class="code-block">
+        <div class="code-header">Using cuBLAS for comparison</div>
+        <pre><code><span class="dir">#include</span> <span class="str">&lt;cublas_v2.h&gt;</span>
+
+cublasHandle_t handle;
+<span class="fn">cublasCreate</span>(&amp;handle);
+
+<span class="type">float</span> alpha = <span class="num">1.0f</span>, beta = <span class="num">0.0f</span>;
+<span class="cm">// C = alpha * A * B + beta * C</span>
+<span class="fn">cublasSgemm</span>(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+            N, M, K, &amp;alpha,
+            d_B, N, d_A, K, &amp;beta, d_C, N);
+
+<span class="fn">cublasDestroy</span>(handle);</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Reality Check</div>
+        <p>cuBLAS on an RTX 3090 achieves <strong>~25+ TFLOPS</strong> for large FP32 GEMM &mdash; roughly <strong>10&times; faster</strong> than our tiled kernel. Writing your own kernel is great for learning; for production code, use the vendor library.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 08 — Exercises ═══════════════════════════════ -->
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Exercises</h2>
+
+    <p>Hands-on practice to solidify your understanding of tiled matrix multiplication and GPU performance analysis.</p>
+
+    <h3>Exercise 1: Non-Square Matrices</h3>
+    <div class="callout">
+        <div class="callout-label">Task</div>
+        <p>Modify the tiled kernel to multiply non-square matrices: A(512 &times; 768) &times; B(768 &times; 1024) = C(512 &times; 1024). Verify the result against the CPU reference. The boundary handling in our tiled kernel already supports this &mdash; but make sure you understand <strong>why</strong> by tracing through the boundary conditions.</p>
+    </div>
+
+    <h3>Exercise 2: Tile Size Sweep</h3>
+    <div class="callout">
+        <div class="callout-label">Task</div>
+        <p>Run the tiled kernel with TILE_SIZE = 8, 16, and 32 on a 2048&times;2048 matrix. Record the execution time and GFLOPS for each. Which tile size is fastest on your GPU? What limits you from going to TILE_SIZE = 64?</p>
+    </div>
+
+    <h3>Exercise 3: Profile with Nsight Compute</h3>
+    <div class="callout">
+        <div class="callout-label">Task</div>
+        <p>Profile both the naive and tiled kernels using NVIDIA Nsight Compute:</p>
+    </div>
+    <div class="code-block">
+        <div class="code-header">Nsight Compute profiling commands</div>
+        <pre><code><span class="cm"># Profile naive kernel</span>
+ncu --set full -o naive_profile ./naive_matmul
+
+<span class="cm"># Profile tiled kernel</span>
+ncu --set full -o tiled_profile ./tiled_matmul
+
+<span class="cm"># Compare specific metrics</span>
+ncu --metrics sm__throughput_pct,\
+dram__bytes_read.sum,\
+l1tex__t_bytes_pipe_lsu_mem_global_op_ld.sum \
+./naive_matmul</code></pre>
+    </div>
+    <p>Compare these metrics between the two kernels:</p>
+    <ul>
+        <li><strong>DRAM bytes read</strong> &mdash; should be ~16&times; lower in tiled</li>
+        <li><strong>SM throughput</strong> &mdash; should be higher in tiled</li>
+        <li><strong>Shared memory utilisation</strong> &mdash; should be significant in tiled, zero in naive</li>
+        <li><strong>Achieved occupancy</strong> &mdash; compare how well each kernel utilises the SM</li>
+    </ul>
+
+    <h3>Exercise 4: Register Tiling (Advanced)</h3>
+    <div class="callout">
+        <div class="callout-label">Challenge</div>
+        <p>Modify the tiled kernel so each thread computes a 2&times;2 sub-tile of C instead of a single element. This means each block computes a (2&times;TILE_SIZE) &times; (2&times;TILE_SIZE) output region. Measure the improvement. Hint: you'll need to load the same shared memory tile but accumulate into 4 register variables.</p>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════ SLIDE 09 — Summary ═══════════════════════════════ -->
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Summary &amp; Next Steps</h2>
+
+    <h3>What We Covered</h3>
+    <div class="diagram-flow">
+        <div class="diagram-box dim">Naive: 1 thread = 1 element, global mem only</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box accent">Tiled: shared memory, 16&times; less bandwidth</div>
+        <div class="diagram-arrow">&rarr;</div>
+        <div class="diagram-box">5&ndash;7&times; speedup</div>
+    </div>
+
+    <h3>Key Takeaways</h3>
+    <ul>
+        <li><strong>Matrix multiplication is memory-bound</strong> when implemented naively &mdash; redundant global memory reads waste bandwidth.</li>
+        <li><strong>Shared memory tiling</strong> is the fundamental optimisation: cooperatively load data into fast on-chip memory, then reuse it across threads in the block.</li>
+        <li><strong>Two <code>__syncthreads()</code></strong> per tile step are essential &mdash; one after loading, one after computing &mdash; to prevent data races.</li>
+        <li><strong>Boundary handling</strong> (padding with zeros) makes tiled kernels work for arbitrary matrix dimensions, not just nice multiples of the tile size.</li>
+        <li><strong>Arithmetic intensity</strong> is the key metric &mdash; tiling increases it from 0.25 to 4.0 FLOP/byte (with TILE_SIZE=16), moving the kernel from memory-bound towards compute-bound.</li>
+        <li>For production code, use <strong>cuBLAS</strong> &mdash; but understanding tiling is essential for writing other optimised kernels.</li>
+    </ul>
+
+    <h3>Concepts Introduced</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Concept</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>__shared__</code></td>
+                    <td>Declares shared memory visible to all threads in a block</td>
+                </tr>
+                <tr>
+                    <td><code>__syncthreads()</code></td>
+                    <td>Block-level barrier &mdash; all threads must reach it before any proceed</td>
+                </tr>
+                <tr>
+                    <td>Tiling</td>
+                    <td>Decomposing a problem into sub-problems that fit in fast on-chip memory</td>
+                </tr>
+                <tr>
+                    <td>Arithmetic Intensity</td>
+                    <td>FLOP per byte of memory traffic &mdash; determines memory-bound vs compute-bound</td>
+                </tr>
+                <tr>
+                    <td>Roofline Model</td>
+                    <td>Framework for understanding performance limits based on compute and memory bandwidth</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Next Tutorial</h3>
+    <div class="callout">
+        <div class="callout-label">Up Next &mdash; Tutorial 06</div>
+        <p><strong><a href="https://brendanjameslynskey.github.io/CUDA_06_Synchronisation/" style="color: var(--accent); text-decoration: none;">Synchronisation &amp; Atomic Operations</a></strong> &mdash; explore thread synchronisation beyond <code>__syncthreads()</code>: atomic operations, memory fences, cooperative groups, and patterns for reductions and histograms.</p>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════ Footer ════════════════════════════════════ -->
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLMs#cuda-programming">CUDA Programming Series</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">Matrix Multiplication &mdash; Naive to Tiled &mdash; Tutorial 05 of 10</p>
+</footer>
+
+<script>
+    // Smooth scroll for table-of-contents links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+
+    // Subtle fade-in animation for slides on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+
+</body>
+</html>
