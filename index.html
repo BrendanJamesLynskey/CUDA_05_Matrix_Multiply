@@ -9,15 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-card: #0d1117;
-            --bg-code: #161b22;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent: #76B900;
-            --accent-dim: #76B90044;
-            --accent-glow: #76B90033;
-            --border: #21262d;
+            --bg-primary: #1b1b1a;
+            --bg-card: #212120;
+            --bg-code: #292928;
+            --text-primary: #edede7;
+            --text-secondary: #9b9b95;
+            --accent: #b8b315;
+            --accent-dim: #b8b31544;
+            --accent-glow: #b8b31533;
+            --border: #363633;
             --font-display: 'Space Grotesk', sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-body: 'Inter', sans-serif;
@@ -228,7 +228,7 @@
             font-family: var(--font-mono);
             font-size: 0.75rem;
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(184,179,21,0.08);
             padding: 0.4rem 1rem;
             border-bottom: 1px solid var(--border);
         }
@@ -243,18 +243,18 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             line-height: 1.6;
-            color: #c9d1d9;
+            color: #d5d5cf;
         }
 
         /* Syntax highlighting (manual) */
-        .kw { color: #ff7b72; }
-        .fn { color: #d2a8ff; }
-        .str { color: #a5d6ff; }
-        .cm { color: #8b949e; font-style: italic; }
-        .num { color: #79c0ff; }
-        .type { color: #ffa657; }
-        .dir { color: #ff7b72; }
-        .mac { color: #ffa657; }
+        .kw { color: #e57d63; }
+        .fn { color: #d1c2e1; }
+        .str { color: #c9dbe2; }
+        .cm { color: #9b9b95; font-style: italic; }
+        .num { color: #afcbd8; }
+        .type { color: #e0b172; }
+        .dir { color: #e57d63; }
+        .mac { color: #e0b172; }
 
         /* ── Tables ── */
         .table-wrap {
@@ -292,7 +292,7 @@
         }
 
         tr:nth-child(even) td {
-            background: rgba(13, 17, 23, 0.5);
+            background: rgba(33,33,32,0.5);
         }
 
         /* ── Diagrams ── */
@@ -324,7 +324,7 @@
         .diagram-box.accent {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(184,179,21,0.08);
         }
 
         .diagram-box.dim {
@@ -400,7 +400,7 @@
         .hierarchy-item.accent {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(184,179,21,0.08);
         }
 
         /* Grid diagram */
@@ -503,21 +503,21 @@
         }
 
         .matrix-cell.highlight {
-            background: rgba(118, 185, 0, 0.15);
+            background: rgba(184,179,21,0.15);
             border-color: var(--accent);
             color: var(--accent);
         }
 
         .matrix-cell.highlight-b {
-            background: rgba(121, 192, 255, 0.12);
-            border-color: #79c0ff;
-            color: #79c0ff;
+            background: rgba(175,203,216,0.12);
+            border-color: #afcbd8;
+            color: #afcbd8;
         }
 
         .matrix-cell.highlight-c {
-            background: rgba(210, 168, 255, 0.12);
-            border-color: #d2a8ff;
-            color: #d2a8ff;
+            background: rgba(209,194,225,0.12);
+            border-color: #d1c2e1;
+            color: #d1c2e1;
         }
 
         .matrix-label {
@@ -529,8 +529,8 @@
         }
 
         .matrix-label.accent { color: var(--accent); }
-        .matrix-label.blue { color: #79c0ff; }
-        .matrix-label.purple { color: #d2a8ff; }
+        .matrix-label.blue { color: #afcbd8; }
+        .matrix-label.purple { color: #d1c2e1; }
 
         .matrix-op {
             font-family: var(--font-display);
@@ -757,9 +757,9 @@
     <div class="diagram-flow">
         <div class="diagram-box">Thread (row, col)</div>
         <div class="diagram-arrow">&rarr;</div>
-        <div class="diagram-box" style="border-color: #ff7b72; color: #ff7b72;">Read N elements from A row</div>
+        <div class="diagram-box" style="border-color: #e57d63; color: #e57d63;">Read N elements from A row</div>
         <div class="diagram-arrow">&rarr;</div>
-        <div class="diagram-box" style="border-color: #ff7b72; color: #ff7b72;">Read N elements from B col</div>
+        <div class="diagram-box" style="border-color: #e57d63; color: #e57d63;">Read N elements from B col</div>
         <div class="diagram-arrow">&rarr;</div>
         <div class="diagram-box accent">Write 1 element to C</div>
     </div>
@@ -925,7 +925,7 @@ Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span 
     <div class="diagram-vertical">
         <div class="diagram-box" style="width: 100%; max-width: 500px;">Peak Compute: 36 TFLOPS</div>
         <div class="diagram-arrow">&darr;</div>
-        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #ff7b72; color: #ff7b72;">Ridge Point: 38.5 FLOP/byte</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #e57d63; color: #e57d63;">Ridge Point: 38.5 FLOP/byte</div>
         <div class="diagram-arrow">&darr;</div>
         <div class="diagram-box dim" style="width: 100%; max-width: 500px;">Naive MatMul: 0.25 FLOP/byte &mdash; 150&times; below ridge!</div>
     </div>
@@ -1032,7 +1032,7 @@ Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span 
                 <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
                 <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
             </div>
-            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #79c0ff; margin-top: 0.3rem; text-align: center;">Tile from col-band of B</div>
+            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #afcbd8; margin-top: 0.3rem; text-align: center;">Tile from col-band of B</div>
         </div>
 
         <div class="matrix-op">=</div>
@@ -1049,7 +1049,7 @@ Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span 
                 <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
                 <div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div><div class="matrix-cell">.</div>
             </div>
-            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #d2a8ff; margin-top: 0.3rem; text-align: center;">Output tile of C (accumulated)</div>
+            <div style="font-family: var(--font-mono); font-size: 0.6rem; color: #d1c2e1; margin-top: 0.3rem; text-align: center;">Output tile of C (accumulated)</div>
         </div>
     </div>
 
@@ -1061,23 +1061,23 @@ Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span 
             <div style="background: var(--bg-code); border: 1px solid var(--accent); border-radius: 6px; padding: 0.6rem; text-align: center;">
                 <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent); margin-bottom: 0.3rem;">Global Memory</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
-                    <div style="background: rgba(118,185,0,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">A tile</div>
-                    <div style="background: rgba(121,192,255,0.12); border: 1px solid #79c0ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #79c0ff;">B tile</div>
+                    <div style="background: rgba(184,179,21,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">A tile</div>
+                    <div style="background: rgba(175,203,216,0.12); border: 1px solid #afcbd8; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #afcbd8;">B tile</div>
                 </div>
             </div>
             <div style="color: var(--accent); font-weight: 700; font-size: 1.2rem;">&rarr;</div>
-            <div style="background: var(--bg-code); border: 1px solid #ffa657; border-radius: 6px; padding: 0.6rem; text-align: center;">
-                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #ffa657; margin-bottom: 0.3rem;">Shared Memory</div>
+            <div style="background: var(--bg-code); border: 1px solid #e0b172; border-radius: 6px; padding: 0.6rem; text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #e0b172; margin-bottom: 0.3rem;">Shared Memory</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
-                    <div style="background: rgba(118,185,0,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">As[ty][tx]</div>
-                    <div style="background: rgba(121,192,255,0.12); border: 1px solid #79c0ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #79c0ff;">Bs[ty][tx]</div>
+                    <div style="background: rgba(184,179,21,0.15); border: 1px solid var(--accent); border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: var(--accent);">As[ty][tx]</div>
+                    <div style="background: rgba(175,203,216,0.12); border: 1px solid #afcbd8; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #afcbd8;">Bs[ty][tx]</div>
                 </div>
                 <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--text-secondary); margin-top: 0.3rem;">__syncthreads()</div>
             </div>
             <div style="color: var(--accent); font-weight: 700; font-size: 1.2rem;">&rarr;</div>
-            <div style="background: var(--bg-code); border: 1px solid #d2a8ff; border-radius: 6px; padding: 0.6rem; text-align: center;">
-                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #d2a8ff; margin-bottom: 0.3rem;">Registers</div>
-                <div style="background: rgba(210,168,255,0.12); border: 1px solid #d2a8ff; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #d2a8ff;">sum += As[ty][i] * Bs[i][tx]</div>
+            <div style="background: var(--bg-code); border: 1px solid #d1c2e1; border-radius: 6px; padding: 0.6rem; text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: #d1c2e1; margin-bottom: 0.3rem;">Registers</div>
+                <div style="background: rgba(209,194,225,0.12); border: 1px solid #d1c2e1; border-radius: 2px; padding: 0.2rem; font-family: var(--font-mono); font-size: 0.5rem; color: #d1c2e1;">sum += As[ty][i] * Bs[i][tx]</div>
                 <div style="font-family: var(--font-mono); font-size: 0.5rem; color: var(--text-secondary); margin-top: 0.3rem;">__syncthreads()</div>
             </div>
         </div>
@@ -1438,7 +1438,7 @@ Total bytes  = <span class="num">2</span> * <span class="num">1024</span>^<span 
         <div class="diagram-arrow">&darr;</div>
         <div class="diagram-box" style="width: 100%; max-width: 500px;">Double buffering &mdash; overlap load &amp; compute</div>
         <div class="diagram-arrow">&darr;</div>
-        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #d2a8ff; color: #d2a8ff;">cuBLAS / CUTLASS &mdash; near-peak performance</div>
+        <div class="diagram-box" style="width: 100%; max-width: 500px; border-color: #d1c2e1; color: #d1c2e1;">cuBLAS / CUTLASS &mdash; near-peak performance</div>
     </div>
 
     <div class="diagram-grid cols-2">
